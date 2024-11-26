@@ -40,49 +40,6 @@ public class FlinkDataStreamAvroWritesWithSchema {
         this.table = hadoopCatalog.loadTable(tableIdentifier);
     }
 
-    /*@Deprecated
-    protected void output(DataStream<GenericRecord> outputStream, Schema avroSchema) {
-        DataStream<Row> rowDataStream = outputStream.map(gc -> {
-            int columnNum = gc.getSchema().getFields().size();
-            Object[] rowData = new Object[columnNum];
-            for (int i = 0; i < columnNum; i++) {
-                Object o = gc.get(i);
-                if (o instanceof Boolean m) {
-                    rowData[i] = m;
-                }
-                if (o instanceof Long m) {
-                    rowData[i] = m;
-                }
-                if (o instanceof Integer m) {
-                    rowData[i] = m;
-                }
-                if (o instanceof Float m) {
-                    rowData[i] = m;
-                }
-                if (o instanceof Double m) {
-                    rowData[i] = m;
-                } else if (o instanceof Utf8 m) {
-                    rowData[i] = new String(m.getBytes());
-                } else {
-                    System.out.println(gc.get(i).getClass());
-                    rowData[i] = gc.get(i);
-                }
-            }
-            return Row.of(rowData);
-        });
-
-        org.apache.iceberg.Schema icebergSchema = AvroSchemaUtil.toIceberg(avroSchema);
-        RowType rowType = FlinkSchemaUtil.convert(icebergSchema);
-        TableSchema tableSchema = FlinkSchemaUtil.toSchema(rowType);
-        FlinkSink.forRow(rowDataStream, tableSchema)
-                .table(table)
-                .tableLoader(tableLoader)
-                .tableSchema(tableSchema)
-                .writeParallelism(parallelism)
-                .upsert(true)
-                .append();
-    }*/
-
     public void write(DataStream<GenericRecord> outputStream, Schema avroSchema) throws Exception {
         org.apache.iceberg.Schema icebergSchema = AvroSchemaUtil.toIceberg(avroSchema);
         RowType rowType = FlinkSchemaUtil.convert(icebergSchema);
@@ -96,7 +53,6 @@ public class FlinkDataStreamAvroWritesWithSchema {
                 .upsert(true)
                 .append();
     }
-
 
     public static void main(String[] args) throws Exception {
         System.setProperty("HADOOP_USER_NAME", "bryan");
