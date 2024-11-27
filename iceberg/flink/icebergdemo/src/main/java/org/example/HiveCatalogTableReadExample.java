@@ -6,6 +6,7 @@ import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.data.RowData;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.iceberg.Table;
 import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.flink.CatalogLoader;
 import org.apache.iceberg.flink.TableLoader;
@@ -20,40 +21,38 @@ import java.util.Map;
 
 /**
  * Read catalog data from hive metastore
- *
+ * <p>
  * CREATE CATALOG hive_catalog WITH (
- *   'type'='iceberg',
- *   'catalog-type'='hive',
- *   'uri'='thrift://localhost:9083',
- *   'clients'='5',
- *   'property-version'='1',
- *   'warehouse'='hdfs://localhost:9000/user/hive/warehouse'
+ * 'type'='iceberg',
+ * 'catalog-type'='hive',
+ * 'uri'='thrift://localhost:9083',
+ * 'clients'='5',
+ * 'property-version'='1',
+ * 'warehouse'='hdfs://localhost:9000/user/hive/warehouse'
  * );
- *
+ * <p>
  * CREATE TABLE flink_table (
- *     id   BIGINT,
- *     data STRING
+ * id   BIGINT,
+ * data STRING
  * ) WITH (
- *     'connector'='iceberg',
- *     'catalog-name'=' hive_catalog',
- *     'catalog-database'='hive_db',
- *     'catalog-table'='hive_iceberg_table',
- *     'uri'='thrift://localhost:9083',
- *     'warehouse'='hdfs://localhost:9000/user/hive/warehouse'
+ * 'connector'='iceberg',
+ * 'catalog-name'=' hive_catalog',
+ * 'catalog-database'='hive_db',
+ * 'catalog-table'='hive_iceberg_table',
+ * 'uri'='thrift://localhost:9083',
+ * 'warehouse'='hdfs://localhost:9000/user/hive/warehouse'
  * );
- *
+ * <p>
  * INSERT INTO `hive_catalog`.`hive_db`.`hive_iceberg_table` VALUES (1, 'AAA'), (2, 'BBB'), (3, 'CCC');
  */
 public class HiveCatalogTableReadExample {
 
     public static void streamingReadHiveCatalogTable() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
-        HiveCatalog catalog = new HiveCatalog();
         Map<String, String> hiveProperties = new HashMap<>();
         hiveProperties.put("warehouse", "hdfs://172.30.69.222:9000/user/hive/warehouse");
         hiveProperties.put("uri", "thrift://172.30.69.222:9083");
-        catalog.initialize("hive", hiveProperties);
-        TableLoader tableLoader = TableLoader.fromCatalog(CatalogLoader.hive("hive", new Configuration(), hiveProperties),
+        TableLoader tableLoader = TableLoader.fromCatalog(CatalogLoader.hive("hive_catalog", new Configuration(), hiveProperties),
                 TableIdentifier.of("hive_db", "hive_iceberg_table"));
         IcebergSource<RowData> source = IcebergSource.forRowData()
                 .tableLoader(tableLoader)
@@ -75,12 +74,13 @@ public class HiveCatalogTableReadExample {
 
     public static void batchReadHiveCatalogTable() throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
-        HiveCatalog catalog = new HiveCatalog();
         Map<String, String> hiveProperties = new HashMap<>();
         hiveProperties.put("warehouse", "hdfs://172.30.69.222:9000/user/hive/warehouse");
         hiveProperties.put("uri", "thrift://172.30.69.222:9083");
-        catalog.initialize("hive", hiveProperties);
-        TableLoader tableLoader = TableLoader.fromCatalog(CatalogLoader.hive("hive", new Configuration(), hiveProperties),
+/*        HiveCatalog catalog = new HiveCatalog();
+        catalog.initialize("hive_catalog", hiveProperties);
+        Table table = catalog.loadTable(TableIdentifier.of("hive_db", "hive_iceberg_table"));*/
+        TableLoader tableLoader = TableLoader.fromCatalog(CatalogLoader.hive("hive_catalog", new Configuration(), hiveProperties),
                 TableIdentifier.of("hive_db", "hive_iceberg_table"));
         IcebergSource<org.apache.flink.table.data.RowData> source = IcebergSource.forRowData()
                 .tableLoader(tableLoader)
@@ -95,7 +95,7 @@ public class HiveCatalogTableReadExample {
     }
 
     public static void main(String[] args) throws Exception {
-        //HiveCatalogTableReadExample.batchReadHiveCatalogTable();
-        HiveCatalogTableReadExample.streamingReadHiveCatalogTable();
+        HiveCatalogTableReadExample.batchReadHiveCatalogTable();
+        //HiveCatalogTableReadExample.streamingReadHiveCatalogTable();
     }
 }

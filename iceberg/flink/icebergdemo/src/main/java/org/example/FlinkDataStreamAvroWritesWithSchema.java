@@ -10,9 +10,12 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.types.logical.RowType;
 import org.apache.flink.types.Row;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.iceberg.Table;
 import org.apache.iceberg.avro.AvroSchemaUtil;
+import org.apache.iceberg.catalog.Catalog;
 import org.apache.iceberg.catalog.TableIdentifier;
+import org.apache.iceberg.flink.CatalogLoader;
 import org.apache.iceberg.flink.FlinkSchemaUtil;
 import org.apache.iceberg.flink.TableLoader;
 import org.apache.iceberg.flink.sink.AvroGenericRecordToRowDataMapper;
@@ -22,22 +25,23 @@ import org.apache.iceberg.hadoop.HadoopCatalog;
 
 /**
  * Write avro records with pre-defined schema
+ * write avro data to hive_catalog or hadoop_catalog tables
  */
 public class FlinkDataStreamAvroWritesWithSchema {
-
-    public static String DEFAULT_WAREHOUSE_LOCATION = "hdfs://172.30.69.222:9000/user/hdfs/warehouse";
     private int parallelism = 10;
     private Table table;
     private TableLoader tableLoader;
 
-    public FlinkDataStreamAvroWritesWithSchema(String dataWarehouseLocation, TableIdentifier tableIdentifier) {
-        if (dataWarehouseLocation != null || !dataWarehouseLocation.equals("")) {
-            this.tableLoader = TableLoader.fromHadoopTable(dataWarehouseLocation + "/" + tableIdentifier.namespace() + "/" + tableIdentifier.name());
-        } else {
-            this.tableLoader = TableLoader.fromHadoopTable(DEFAULT_WAREHOUSE_LOCATION + "/" + tableIdentifier.namespace() + "/" + tableIdentifier.name());
+    public FlinkDataStreamAvroWritesWithSchema(Utils.CatalogType catalogType, String catalogName, TableIdentifier tableIdentifier) {
+        if (catalogType.equals(Utils.CatalogType.HIVE)) {
+            this.tableLoader = TableLoader.fromCatalog(CatalogLoader.hive(catalogName, new Configuration(), Utils.getHiveProperties()), tableIdentifier);
+            Catalog hiveCatalog = Utils.getHiveCatalog(catalogName);
+            this.table = hiveCatalog.loadTable(tableIdentifier);
+        } else if (catalogType.equals(Utils.CatalogType.HADOOP)) {
+            this.tableLoader = TableLoader.fromCatalog(CatalogLoader.hadoop(catalogName, new Configuration(), Utils.getHadoopProperties()), tableIdentifier);
+            Catalog hadoopCatalog = Utils.getHadoopCatalog();
+            this.table = hadoopCatalog.loadTable(tableIdentifier);
         }
-        HadoopCatalog hadoopCatalog = Utils.getHadoopCatalog(dataWarehouseLocation);
-        this.table = hadoopCatalog.loadTable(tableIdentifier);
     }
 
     public void write(DataStream<GenericRecord> outputStream, Schema avroSchema) throws Exception {
@@ -56,8 +60,10 @@ public class FlinkDataStreamAvroWritesWithSchema {
 
     public static void main(String[] args) throws Exception {
         System.setProperty("HADOOP_USER_NAME", "bryan");
+        //FlinkDataStreamAvroWritesWithSchema flinkDataStreamAvroWrites =
+                //new FlinkDataStreamAvroWritesWithSchema(Utils.CatalogType.HADOOP, "hadoop_catalog", TableIdentifier.of("default", "sample"));
         FlinkDataStreamAvroWritesWithSchema flinkDataStreamAvroWrites =
-                new FlinkDataStreamAvroWritesWithSchema("hdfs://172.30.69.222:9000/user/hdfs/warehouse", TableIdentifier.of("default", "sample"));
+                new FlinkDataStreamAvroWritesWithSchema(Utils.CatalogType.HIVE, "hive_catalog", TableIdentifier.of("default", "sample"));
         String schemaStr = """
                         {
                           "type": "record",
@@ -78,7 +84,7 @@ public class FlinkDataStreamAvroWritesWithSchema {
         Schema.Parser parser = new Schema.Parser();
         Schema avroSchema = parser.parse(schemaStr);
         GenericRecord genericRecord = new GenericData.Record(avroSchema);
-        genericRecord.put("id", 1);
+        genericRecord.put("id", 19);
         genericRecord.put("data", "VVVVV");
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
