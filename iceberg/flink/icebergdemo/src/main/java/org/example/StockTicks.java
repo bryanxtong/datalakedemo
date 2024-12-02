@@ -4,15 +4,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class StockTicks {
-
     private long volume;
-    private String ts;
     private String symbol;
-    private int year;
+    private String ts;
     private String month;
     private double high;
     private double low;
     private String key;
+    private int year;
     private String date;
     private double close;
     private double open;
@@ -21,20 +20,20 @@ public class StockTicks {
     public StockTicks() {
     }
 
-    public StockTicks(long volume, String ts, String symbol, int year, String month, double high, double low, String key, String date, double close, double open, String day) {
+/*    public StockTicks(long volume, String symbol, String ts, String month, double high, double low, String key, int year, String date, double close, double open, String day) {
         this.volume = volume;
-        this.ts = ts;
         this.symbol = symbol;
-        this.year = year;
+        this.ts = ts;
         this.month = month;
         this.high = high;
         this.low = low;
         this.key = key;
+        this.year = year;
         this.date = date;
         this.close = close;
         this.open = open;
         this.day = day;
-    }
+    }*/
 
     public long getVolume() {
         return volume;
