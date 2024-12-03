@@ -35,7 +35,6 @@ public class KafkaStockTicksWithJsonSchemaProducer {
         ObjectMapper objectMapper = new ObjectMapper();
         for (String jsonLine : lines) {
             StockTicksWithSchema stockTicks = objectMapper.readValue(jsonLine, StockTicksWithSchema.class);
-            System.out.println(stockTicks);
             Future<RecordMetadata> future = producer.send(new ProducerRecord<>("stock_ticks_jsonschema", stockTicks), (recordMetadata, e) -> {
                 if (null == e) {
                     System.out.println(recordMetadata.topic() + " " + recordMetadata.partition());
