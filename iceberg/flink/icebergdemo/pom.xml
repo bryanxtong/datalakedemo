@@ -134,11 +134,11 @@
             <scope>provided</scope>
 -->
         </dependency>
-<!--        <dependency>
+        <dependency>
             <groupId>de.javakaffee</groupId>
             <artifactId>kryo-serializers</artifactId>
             <version>0.45</version>
-        </dependency>-->
+        </dependency>
     </dependencies>
 
     <build>
