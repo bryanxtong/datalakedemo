@@ -7,20 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * CREATE CATALOG hadoop_catalog WITH (
- * 'type'='iceberg',
- * 'catalog-type'='hadoop',
- * 'warehouse'='hdfs://localhost:9000/user/hdfs/warehouse',
- * 'property-version'='1'
- * );
- * <p>
- * CREATE TABLE `hadoop_catalog`.`default`.`sample` (
- * id BIGINT COMMENT 'unique id',
- * data STRING,
- * PRIMARY KEY (`id`) NOT ENFORCED
- * );
- */
+
 public class CreateTable {
 
     /**

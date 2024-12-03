@@ -63,7 +63,7 @@ public class KafkaDataStreamJsonSchemaRead2IcebergTables {
     public KafkaSource<StockTicksWithSchema> buildKafkaSource(String kafkaBootStrapServers, String[] topics, String groupId) {
         Map<String, String> kafkaProps = new HashMap<>();
         kafkaProps.put(KafkaJsonSchemaDeserializerConfig.JSON_VALUE_TYPE, StockTicksWithSchema.class.getName());
-        kafkaProps.put("schema.registry.url", "http://localhost:18081");
+        kafkaProps.put("schema.registry.url", CONFLUENT_SCHEMA_REGISTRY_URL);
         kafkaProps.put("json.fail.invalid.schema", String.valueOf(true));
 
         KafkaSource<StockTicksWithSchema> kafkaSource = KafkaSource.<StockTicksWithSchema>builder()
