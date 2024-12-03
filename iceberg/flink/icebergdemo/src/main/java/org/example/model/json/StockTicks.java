@@ -1,60 +1,9 @@
-package org.example;
+package org.example.model.json;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-@io.confluent.kafka.schemaregistry.annotations.Schema(value = StockTicksWithSchema.SCHEMA_AS_STRING,
-        refs = {})
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class StockTicksWithSchema {
-    public static final String SCHEMA_AS_STRING = """
-               {
-                  "schemaType": "JSON",
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "$id": "https://example.com/stockticks.schema.json",
-                  "title": "StockTicks",
-                  "description": "stock ticks",
-                  "type": "object",
-                  "properties": {
-                    "volume": {
-                      "type": "number"
-                    },
-                    "symbol": {
-                      "type": "string"
-                    },
-                    "ts": {
-                      "type": "string"
-                    },
-                    "month": {
-                      "type": "string"
-                    },
-                    "high": {
-                      "type": "number"
-                    },
-                    "low": {
-                      "type": "number"
-                    },
-                    "key": {
-                      "type": "string"
-                    },
-                    "year": {
-                      "type": "integer"
-                    },
-                    "date": {
-                      "type": "string"
-                    },
-                    "close": {
-                      "type": "number"
-                    },
-                    "open": {
-                      "type": "number"
-                    },
-                    "day": {
-                      "type": "string"
-                    }
-                  }
-                }
-            """;
-
+public class StockTicks {
     private long volume;
     private String symbol;
     private String ts;
@@ -68,7 +17,7 @@ public class StockTicksWithSchema {
     private double open;
     private String day;
 
-    public StockTicksWithSchema() {
+    public StockTicks() {
     }
 
 /*    public StockTicks(long volume, String symbol, String ts, String month, double high, double low, String key, int year, String date, double close, double open, String day) {
@@ -184,15 +133,15 @@ public class StockTicksWithSchema {
 
     @Override
     public String toString() {
-        return "StockTicksWithSchema{" +
+        return "StockTicks{" +
                 "volume=" + volume +
-                ", symbol='" + symbol + '\'' +
                 ", ts='" + ts + '\'' +
+                ", symbol='" + symbol + '\'' +
+                ", year=" + year +
                 ", month='" + month + '\'' +
                 ", high=" + high +
                 ", low=" + low +
                 ", key='" + key + '\'' +
-                ", year=" + year +
                 ", date='" + date + '\'' +
                 ", close=" + close +
                 ", open=" + open +

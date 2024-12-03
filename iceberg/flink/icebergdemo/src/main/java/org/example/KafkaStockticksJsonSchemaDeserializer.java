@@ -1,8 +1,7 @@
 package org.example;
 
 import io.confluent.kafka.serializers.json.KafkaJsonSchemaDeserializer;
-
-import java.util.Map;
+import org.example.model.json.StockTicksWithSchema;
 
 public class KafkaStockticksJsonSchemaDeserializer extends KafkaJsonSchemaDeserializer<StockTicksWithSchema>{
 

@@ -20,6 +20,7 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.flink.CatalogLoader;
 import org.apache.iceberg.flink.TableLoader;
 import org.apache.iceberg.flink.sink.FlinkSink;
+import org.example.model.json.StockTicksWithSchema;
 
 import java.util.HashMap;
 import java.util.Map;
