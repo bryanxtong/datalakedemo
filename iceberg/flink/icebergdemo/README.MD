@@ -1,5 +1,7 @@
-###tables create in this samples
+# tables create in this samples
 
+create a hadoop catalog and tables
+```
 CREATE CATALOG hadoop_catalog WITH (
 'type'='iceberg',
 'catalog-type'='hadoop',
@@ -27,7 +29,9 @@ create table `hadoop_catalog`.`default`.`stock_ticks`(
  `open` double,
  `day` string
  );
-
+```
+create a hive catalog and tables
+```
 CREATE CATALOG hive_catalog WITH (
  'type'='iceberg',
  'catalog-type'='hive',
@@ -56,3 +60,7 @@ create table `stock_ticks`(
 'uri'='thrift://localhost:9083',
 'warehouse'='hdfs://localhost:9000/user/hive/warehouse'
 );
+
+```
+
+
