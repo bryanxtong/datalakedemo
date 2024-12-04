@@ -1,0 +1,17 @@
+syntax = "proto3";
+package org.example.model.protobuf;
+option java_outer_classname = "StockTicksProto";
+message StockTicks {
+  int64 volume = 1;
+  string symbol = 2;
+  string ts = 3;
+  string month = 4;
+  double high = 5;
+  double low = 6;
+  string key = 7;
+  int32 year = 8;
+  string date = 9;
+  double close = 10;
+  double open = 11;
+  string day = 12;
+}
