@@ -31,7 +31,6 @@ public class KafkaGenericAvroProducer {
         kafkaProps.put(KafkaAvroSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "http://localhost:18081");
         kafkaProps.put(KafkaAvroSerializerConfig.AUTO_REGISTER_SCHEMAS, true);
         Producer<String, GenericRecord> producer = new KafkaProducer<>(kafkaProps);
-
         Schema schema = Utils.getAvroSchema("StockTicks.avsc");
         List<String> lines = Utils.readJsonLines("batch_1.json");
         ObjectMapper objectMapper = new ObjectMapper();
@@ -51,7 +50,7 @@ public class KafkaGenericAvroProducer {
             genericRecord.put("close", stockTicks.getClose());
             genericRecord.put("open", stockTicks.getOpen());
             genericRecord.put("day", stockTicks.getDay());
-            ProducerRecord<String, GenericRecord> record = new ProducerRecord<>("StockTicksAvro", genericRecord.hasField("key") ? String.valueOf(genericRecord.get("key")) : null, genericRecord);
+            ProducerRecord<String, GenericRecord> record = new ProducerRecord<>("StockTicksGenericAvro", genericRecord.hasField("key") ? String.valueOf(genericRecord.get("key")) : null, genericRecord);
             Future<RecordMetadata> future = producer.send(record, (recordMetadata, e) -> {
                 if (null == e) {
                     System.out.println("topic: " + recordMetadata.topic() + " partition: " + recordMetadata.partition());

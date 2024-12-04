@@ -3,7 +3,7 @@ package org.example;
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
-import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.generic.GenericData;
 import org.apache.avro.util.Utf8;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.MapFunction;
@@ -33,7 +33,7 @@ import java.util.Map;
  * <p>
  * <p>
  */
-public class KafkaDataStreamAvroRecordRead2IcebergTables {
+public class KafkaDataStreamGenericAvroRecordRead2IcebergTables {
     public static String CONFLUENT_SCHEMA_REGISTRY_URL = "http://localhost:18081";
 
     public void setCheckpoint(StreamExecutionEnvironment env) throws ClassNotFoundException {
@@ -48,7 +48,7 @@ public class KafkaDataStreamAvroRecordRead2IcebergTables {
         env.getCheckpointConfig().enableUnalignedCheckpoints();
         Configuration config = new Configuration();
         config.set(CheckpointingOptions.CHECKPOINT_STORAGE, "filesystem");
-        config.set(CheckpointingOptions.CHECKPOINTS_DIRECTORY, "file:///c://flink/checkpoint");
+        config.set(CheckpointingOptions.CHECKPOINTS_DIRECTORY, "file:///c://flink/checkpoint_genericavro");
         //TODO
         Class<?> unmodColl = Class.forName("java.util.Collections$UnmodifiableCollection");
         env.getConfig().addDefaultKryoSerializer(unmodColl, UnmodifiableCollectionsSerializer.class);
@@ -71,26 +71,37 @@ public class KafkaDataStreamAvroRecordRead2IcebergTables {
         return kafkaSource;
     }
 
+    /**
+     * transform to rowdata
+     * @param env
+     * @param kafkaBootStrapServers
+     * @param topics
+     * @param groupId
+     * @return
+     * @throws ClassNotFoundException
+     */
     public SingleOutputStreamOperator<RowData> createDataStreamSource(StreamExecutionEnvironment env, String kafkaBootStrapServers, String[] topics, String groupId) throws ClassNotFoundException {
         setCheckpoint(env);
         KafkaSource<Object> source = this.buildKafkaSource(kafkaBootStrapServers, topics, groupId);
         return env
                 .fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source")
                 .map((MapFunction<Object, RowData>) value -> {
-                    GenericRecord rc = (GenericRecord) value;
                     GenericRowData rowData = new GenericRowData(12);
-                    String[] fieldNames = new String[]{"volume", "symbol", "ts", "month", "high", "low", "key", "year", "date", "close", "open", "day"};
-                    for (int i = 0; i < fieldNames.length; i++) {
-                        Object o = rc.get(fieldNames[i]);
-                        if (o instanceof Long l) {
-                            rowData.setField(i, l);
-                        } else if (o instanceof Utf8 str) {
-                            rowData.setField(i, StringData.fromString(new String(str.getBytes())));
-                        } else if (o instanceof Double d) {
-                            rowData.setField(i, d);
-                        } else if (o instanceof Integer integer) {
-                            rowData.setField(i, integer);
+                    if(value instanceof GenericData.Record rc){
+                        String[] fieldNames = new String[]{"volume", "symbol", "ts", "month", "high", "low", "key", "year", "date", "close", "open", "day"};
+                        for (int i = 0; i < fieldNames.length; i++) {
+                            Object o = rc.get(fieldNames[i]);
+                            if (o instanceof Long l) {
+                                rowData.setField(i, l);
+                            } else if (o instanceof Utf8 str) {
+                                rowData.setField(i, StringData.fromString(new String(str.getBytes())));
+                            } else if (o instanceof Double d) {
+                                rowData.setField(i, d);
+                            } else if (o instanceof Integer integer) {
+                                rowData.setField(i, integer);
+                            }
                         }
+                        return rowData;
                     }
                     return rowData;
                 });
@@ -136,8 +147,9 @@ public class KafkaDataStreamAvroRecordRead2IcebergTables {
     public static void main(String[] args) throws Exception {
         System.setProperty("HADOOP_USER_NAME", "bryan");
         StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
-        KafkaDataStreamAvroRecordRead2IcebergTables write2Tables = new KafkaDataStreamAvroRecordRead2IcebergTables();
-        DataStream<RowData> kafkaSource = write2Tables.createDataStreamSource(env, "localhost:19092", new String[]{"StockTicksAvro"}, "stock_sticks_client");
+        KafkaDataStreamGenericAvroRecordRead2IcebergTables write2Tables = new KafkaDataStreamGenericAvroRecordRead2IcebergTables();
+        DataStream<RowData> kafkaSource = write2Tables.createDataStreamSource(env, "localhost:19092", new String[]{"StockTicksGenericAvro"}, "stock_sticks_client");
+        kafkaSource.print("----------------");
         write2Tables.writeToIcebergHadoopCatalogTables(kafkaSource, "hadoop_catalog", "default", "stock_ticks");
         write2Tables.writeToIcebergHiveCatalogTables(kafkaSource, "hive_catalog", "hive_db", "stock_ticks");
         env.execute("Writes Json data with schema in schema registry into iceberg tables");

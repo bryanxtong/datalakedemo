@@ -27,8 +27,8 @@ public class KafkaSpecificAvroProducer {
         Producer<String, StockTicks> producer = new KafkaProducer<>(kafkaProps);
         //read json lines
         List<String> lines = Utils.readJsonLines("batch_1.json");
+        ObjectMapper objectMapper = new ObjectMapper();
         for (String line : lines) {
-            ObjectMapper objectMapper = new ObjectMapper();
             StockTicks stockTicks = objectMapper.readValue(line, StockTicks.class);
             Future<RecordMetadata> future = producer.send(new ProducerRecord<>("StockTicksSpecificAvro", String.valueOf(stockTicks.getKey()), stockTicks), (recordMetadata, e) -> {
                 if(null == e){
