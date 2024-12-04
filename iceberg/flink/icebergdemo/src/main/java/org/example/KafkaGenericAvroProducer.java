@@ -12,9 +12,6 @@ import org.example.model.json.StockTicks;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
@@ -33,69 +30,10 @@ public class KafkaGenericAvroProducer {
         kafkaProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:19092,localhost:29092,localhost:39092");
         kafkaProps.put(KafkaAvroSerializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "http://localhost:18081");
         kafkaProps.put(KafkaAvroSerializerConfig.AUTO_REGISTER_SCHEMAS, true);
-
         Producer<String, GenericRecord> producer = new KafkaProducer<>(kafkaProps);
-        String schemaStr = """
-                                        {
-                  "type": "record",
-                  "name": "StockTicks",
-                  "namespace": "org.example.model.avro",
-                  "fields": [
-                    {
-                      "name": "volume",
-                      "type": "long"
-                    },
-                    {
-                      "name": "symbol",
-                      "type": "string"
-                    },
-                    {
-                      "name": "ts",
-                      "type": "string"
-                    },
-                    {
-                      "name": "month",
-                      "type": "string"
-                    },
-                    {
-                      "name": "high",
-                      "type": "double"
-                    },
-                    {
-                      "name": "low",
-                      "type": "double"
-                    },
-                    {
-                      "name": "key",
-                      "type": "string"
-                    },
-                    {
-                      "name": "year",
-                      "type": "int"
-                    },
-                    {
-                      "name": "date",
-                      "type": "string"
-                    },
-                    {
-                      "name": "close",
-                      "type": "double"
-                    },
-                    {
-                      "name": "open",
-                      "type": "double"
-                    },
-                    {
-                      "name": "day",
-                      "type": "string"
-                    }
-                  ]
-                }
-                                """;
-        Schema.Parser parser = new Schema.Parser();
-        Schema schema = parser.parse(schemaStr);
 
-        List<String> lines = readJsonLines();
+        Schema schema = Utils.getAvroSchema("StockTicks.avsc");
+        List<String> lines = Utils.readJsonLines("batch_1.json");
         ObjectMapper objectMapper = new ObjectMapper();
         for (String line : lines) {
             //read data as json and convert into avro for testing
@@ -124,10 +62,5 @@ public class KafkaGenericAvroProducer {
         }
         producer.flush();
         producer.close();
-    }
-
-    public static List<String> readJsonLines() throws IOException, URISyntaxException {
-        URL resource = KafkaGenericAvroProducer.class.getClassLoader().getResource("data/batch_1.json");
-        return Files.readAllLines(Paths.get(resource.toURI()));
     }
 }

@@ -8,7 +8,13 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.hadoop.HadoopCatalog;
 import org.apache.iceberg.hive.HiveCatalog;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class Utils {
@@ -68,5 +74,35 @@ public class Utils {
         }
 
         return null;
+    }
+
+    /**
+     * get the avro schema from the pre-defined ones
+     * @param name
+     * @return
+     * @throws URISyntaxException
+     * @throws IOException
+     */
+    public static org.apache.avro.Schema getAvroSchema(String name) throws URISyntaxException, IOException {
+        URL resource = KafkaGenericAvroProducer.class.getClassLoader().getResource("avro/"+ name);
+        List<String> lines = Files.readAllLines(Paths.get(resource.toURI()));
+        StringBuilder schemaStr = new StringBuilder();
+        for(String line : lines){
+            schemaStr.append(line);
+        }
+        org.apache.avro.Schema.Parser parser = new org.apache.avro.Schema.Parser();
+        org.apache.avro.Schema schema = parser.parse(schemaStr.toString());
+        return schema;
+    }
+
+    /**
+     * Read json data line from resources/data/batch_1.json
+     * @return
+     * @throws IOException
+     * @throws URISyntaxException
+     */
+    public static List<String> readJsonLines(String fileName) throws IOException, URISyntaxException {
+        URL resource = KafkaGenericAvroProducer.class.getClassLoader().getResource("data/" + fileName);
+        return Files.readAllLines(Paths.get(resource.toURI()));
     }
 }

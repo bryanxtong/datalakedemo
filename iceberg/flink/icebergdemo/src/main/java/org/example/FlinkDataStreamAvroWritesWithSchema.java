@@ -23,6 +23,9 @@ import org.apache.iceberg.flink.sink.FlinkSink;
 import org.apache.iceberg.flink.util.FlinkCompatibilityUtil;
 import org.apache.iceberg.hadoop.HadoopCatalog;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
+
 /**
  * Write avro records with pre-defined schema
  * write avro data to hive_catalog or hadoop_catalog tables
@@ -32,7 +35,8 @@ public class FlinkDataStreamAvroWritesWithSchema {
     private Table table;
     private TableLoader tableLoader;
 
-    public FlinkDataStreamAvroWritesWithSchema(Utils.CatalogType catalogType, String catalogName, TableIdentifier tableIdentifier) {
+    public FlinkDataStreamAvroWritesWithSchema(Utils.CatalogType catalogType, String catalogName, String databaseName, String tableName) {
+        TableIdentifier tableIdentifier = TableIdentifier.of(databaseName, tableName);
         if (catalogType.equals(Utils.CatalogType.HIVE)) {
             this.tableLoader = TableLoader.fromCatalog(CatalogLoader.hive(catalogName, new Configuration(), Utils.getHiveProperties()), tableIdentifier);
             Catalog hiveCatalog = Utils.getHiveCatalog(catalogName);
@@ -54,35 +58,21 @@ public class FlinkDataStreamAvroWritesWithSchema {
                 .table(table)
                 .tableLoader(tableLoader)
                 .writeParallelism(parallelism)
-                .upsert(true)
+                //.upsert(true)
                 .append();
+    }
+
+    public static org.apache.avro.Schema  getAvroSchema(String avroFileName) throws URISyntaxException, IOException {
+        return Utils.getAvroSchema(avroFileName);
     }
 
     public static void main(String[] args) throws Exception {
         System.setProperty("HADOOP_USER_NAME", "bryan");
         //FlinkDataStreamAvroWritesWithSchema flinkDataStreamAvroWrites =
-                //new FlinkDataStreamAvroWritesWithSchema(Utils.CatalogType.HADOOP, "hadoop_catalog", TableIdentifier.of("default", "sample"));
+                //new FlinkDataStreamAvroWritesWithSchema(Utils.CatalogType.HADOOP, "hadoop_catalog", "default", "sample");
         FlinkDataStreamAvroWritesWithSchema flinkDataStreamAvroWrites =
-                new FlinkDataStreamAvroWritesWithSchema(Utils.CatalogType.HIVE, "hive_catalog", TableIdentifier.of("default", "sample"));
-        String schemaStr = """
-                        {
-                          "type": "record",
-                          "name": "sample",
-                          "namespace": "org.example",
-                          "fields": [
-                            {
-                              "name": "id",
-                              "type": "long"
-                            },
-                            {
-                              "name": "data",
-                              "type": "string"
-                            }
-                          ]
-                        }
-                """;
-        Schema.Parser parser = new Schema.Parser();
-        Schema avroSchema = parser.parse(schemaStr);
+                new FlinkDataStreamAvroWritesWithSchema(Utils.CatalogType.HIVE, "hive_catalog", "default", "sample");
+        Schema avroSchema = Utils.getAvroSchema("sample.avsc");
         GenericRecord genericRecord = new GenericData.Record(avroSchema);
         genericRecord.put("id", 19);
         genericRecord.put("data", "VVVVV");

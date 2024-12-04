@@ -33,8 +33,9 @@ public class FlinkDataStreamAvroWrites {
      */
     private Schema avroSchema;
 
-    public FlinkDataStreamAvroWrites(Utils.CatalogType catalogType,String catalogName,TableIdentifier tableIdentifier) {
-       if(catalogType.equals(Utils.CatalogType.HIVE)){
+    public FlinkDataStreamAvroWrites(Utils.CatalogType catalogType,String catalogName,String databaseName, String tableName) {
+        TableIdentifier tableIdentifier = TableIdentifier.of(databaseName, tableName);
+        if(catalogType.equals(Utils.CatalogType.HIVE)){
            this.tableLoader = TableLoader.fromCatalog(CatalogLoader.hive(catalogName, new Configuration(), Utils.getHiveProperties()), tableIdentifier);
            Catalog hiveCatalog = Utils.getHiveCatalog(catalogName);
            this.table = hiveCatalog.loadTable(tableIdentifier);
@@ -67,8 +68,8 @@ public class FlinkDataStreamAvroWrites {
 
     public static void main(String[] args) throws Exception {
         System.setProperty("HADOOP_USER_NAME", "bryan");
-        //FlinkDataStreamAvroWrites flinkDataStreamAvroWrites = new FlinkDataStreamAvroWrites(Utils.CatalogType.HADOOP,"hadoop_catalog",TableIdentifier.of("default", "sample"));
-        FlinkDataStreamAvroWrites flinkDataStreamAvroWrites = new FlinkDataStreamAvroWrites(Utils.CatalogType.HIVE,"hive_catalog",TableIdentifier.of("default", "sample"));
+        //FlinkDataStreamAvroWrites flinkDataStreamAvroWrites = new FlinkDataStreamAvroWrites(Utils.CatalogType.HADOOP,"hadoop_catalog","default", "sample");
+        FlinkDataStreamAvroWrites flinkDataStreamAvroWrites = new FlinkDataStreamAvroWrites(Utils.CatalogType.HIVE,"hive_catalog","default", "sample");
         Schema avroSchema = flinkDataStreamAvroWrites.getAvroSchema();
         GenericRecord genericRecord = new GenericData.Record(avroSchema);
         genericRecord.put("id", 100);
