@@ -1,0 +1,55 @@
+{
+  "type": "record",
+  "name": "StockTicks",
+  "namespace": "org.example.model.avro",
+  "fields": [
+    {
+      "name": "volume",
+      "type": "long"
+    },
+    {
+      "name": "symbol",
+      "type": "string"
+    },
+    {
+      "name": "ts",
+      "type": "string"
+    },
+    {
+      "name": "month",
+      "type": "string"
+    },
+    {
+      "name": "high",
+      "type": "double"
+    },
+    {
+      "name": "low",
+      "type": "double"
+    },
+    {
+      "name": "key",
+      "type": "string"
+    },
+    {
+      "name": "year",
+      "type": "int"
+    },
+    {
+      "name": "date",
+      "type": "string"
+    },
+    {
+      "name": "close",
+      "type": "double"
+    },
+    {
+      "name": "open",
+      "type": "double"
+    },
+    {
+      "name": "day",
+      "type": "string"
+    }
+  ]
+}
