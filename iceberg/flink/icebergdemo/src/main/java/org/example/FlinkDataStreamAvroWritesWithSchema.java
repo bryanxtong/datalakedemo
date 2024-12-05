@@ -3,13 +3,10 @@ package org.example;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.util.Utf8;
 import org.apache.flink.formats.avro.typeutils.GenericRecordAvroTypeInfo;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.table.api.TableSchema;
 import org.apache.flink.table.types.logical.RowType;
-import org.apache.flink.types.Row;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.iceberg.Table;
 import org.apache.iceberg.avro.AvroSchemaUtil;
@@ -21,7 +18,6 @@ import org.apache.iceberg.flink.TableLoader;
 import org.apache.iceberg.flink.sink.AvroGenericRecordToRowDataMapper;
 import org.apache.iceberg.flink.sink.FlinkSink;
 import org.apache.iceberg.flink.util.FlinkCompatibilityUtil;
-import org.apache.iceberg.hadoop.HadoopCatalog;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -48,7 +44,7 @@ public class FlinkDataStreamAvroWritesWithSchema {
         }
     }
 
-    public void write(DataStream<GenericRecord> outputStream, Schema avroSchema) throws Exception {
+    public void writeAvroRecords(DataStream<GenericRecord> outputStream, Schema avroSchema) throws Exception {
         org.apache.iceberg.Schema icebergSchema = AvroSchemaUtil.toIceberg(avroSchema);
         RowType rowType = FlinkSchemaUtil.convert(icebergSchema);
         FlinkSink.builderFor(
@@ -80,7 +76,7 @@ public class FlinkDataStreamAvroWritesWithSchema {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
         GenericRecordAvroTypeInfo avroTypeInfo = new GenericRecordAvroTypeInfo(avroSchema);
         DataStream<GenericRecord> dataStream = env.fromData(genericRecord).returns(avroTypeInfo);
-        flinkDataStreamAvroWrites.write(dataStream, avroSchema);
+        flinkDataStreamAvroWrites.writeAvroRecords(dataStream, avroSchema);
         env.execute();
     }
 

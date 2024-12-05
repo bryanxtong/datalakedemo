@@ -3,7 +3,7 @@ package org.example;
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
-import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.util.Utf8;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.MapFunction;
@@ -87,21 +87,21 @@ public class KafkaDataStreamGenericAvroRecordRead2IcebergTables {
                 .fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source")
                 .map((MapFunction<Object, RowData>) value -> {
                     GenericRowData rowData = new GenericRowData(12);
-                    if(value instanceof GenericData.Record rc){
-                        String[] fieldNames = new String[]{"volume", "symbol", "ts", "month", "high", "low", "key", "year", "date", "close", "open", "day"};
-                        for (int i = 0; i < fieldNames.length; i++) {
-                            Object o = rc.get(fieldNames[i]);
-                            if (o instanceof Long l) {
-                                rowData.setField(i, l);
-                            } else if (o instanceof Utf8 str) {
-                                rowData.setField(i, StringData.fromString(new String(str.getBytes())));
-                            } else if (o instanceof Double d) {
-                                rowData.setField(i, d);
-                            } else if (o instanceof Integer integer) {
-                                rowData.setField(i, integer);
-                            }
+                    //Method threw 'java.lang.NullPointerException' exception. Cannot evaluate org.apache.avro.Schema$RecordSchema.toString()
+                    //so convert into another object and doesnot send value directly to the next operator
+                    GenericRecord rc = (GenericRecord) value;
+                    String[] fieldNames = new String[]{"volume", "symbol", "ts", "month", "high", "low", "key", "year", "date", "close", "open", "day"};
+                    for (int i = 0; i < fieldNames.length; i++) {
+                        Object o = rc.get(fieldNames[i]);
+                        if (o instanceof Long l) {
+                            rowData.setField(i, l);
+                        } else if (o instanceof Utf8 str) {
+                            rowData.setField(i, StringData.fromString(new String(str.getBytes())));
+                        } else if (o instanceof Double d) {
+                            rowData.setField(i, d);
+                        } else if (o instanceof Integer integer) {
+                            rowData.setField(i, integer);
                         }
-                        return rowData;
                     }
                     return rowData;
                 });
@@ -152,6 +152,6 @@ public class KafkaDataStreamGenericAvroRecordRead2IcebergTables {
         kafkaSource.print("----------------");
         write2Tables.writeToIcebergHadoopCatalogTables(kafkaSource, "hadoop_catalog", "default", "stock_ticks");
         write2Tables.writeToIcebergHiveCatalogTables(kafkaSource, "hive_catalog", "hive_db", "stock_ticks");
-        env.execute("Writes Json data with schema in schema registry into iceberg tables");
+        env.execute("Writes Avro data with schema in schema registry into iceberg tables");
     }
 }
