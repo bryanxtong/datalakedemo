@@ -1,6 +1,7 @@
 # tables create in this samples
 
-java examples to write avro/protobuf/json records into iceberg tables using Flink.
+Java examples to write avro/protobuf/json records into iceberg tables using Flink.
+It includes confluent and flink official avro/protobuf/json serialize/deserialize libraries
 
 create a hadoop catalog and tables
 ```
