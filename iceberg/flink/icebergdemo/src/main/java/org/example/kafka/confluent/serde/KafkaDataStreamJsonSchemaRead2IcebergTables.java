@@ -1,5 +1,6 @@
-package org.example;
+package org.example.kafka.confluent.serde;
 
+import io.confluent.kafka.serializers.json.KafkaJsonSchemaDeserializerConfig;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.configuration.CheckpointingOptions;
@@ -7,8 +8,8 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.ExternalizedCheckpointRetention;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
+import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
 import org.apache.flink.core.execution.CheckpointingMode;
-import org.apache.flink.formats.json.JsonDeserializationSchema;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -19,50 +20,68 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.flink.CatalogLoader;
 import org.apache.iceberg.flink.TableLoader;
 import org.apache.iceberg.flink.sink.FlinkSink;
-import org.example.model.json.StockTicks;
+import org.example.Utils;
+import org.example.model.json.StockTicksWithSchema;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * using Flink Json to deserialize Json as java Object and write to iceberg tables of hadoop/hive catalog
- * and use the KafkaStockTicksWithJsonProducer to send records into kafka for testing and then run the class below
- *
- * It's implementation is the same as KafkaDataStreamJsonRead2IcebergTables.java except It is using flink-json library
- * <p>* <p>
+ * Deserialize Json byte as java Object using confluent KafkaJsonSchemaDeserializer and write to iceberg tables of hadoop/hive catalog
+ * and use the KafkaStockTicksWithJsonSchemaProducer to send records into kafka for testing and then run the class below(Schema registry involved)
+ * <p>
+ * --add-exports=java.base/sun.net.util=ALL-UNNAMED --add-exports=java.rmi/sun.rmi.registry=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED --add-exports=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED --add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.net=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED --add-opens=java.base/java.text=ALL-UNNAMED --add-opens=java.base/java.time=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED --add-opens=java.base/java.util.concurrent.locks=ALL-UNNAMED
+ * <p>
  * <p>
  */
-public class KafkaDataStreamSpecificJsonRead2IcebergTables_FlinkJson {
+public class KafkaDataStreamJsonSchemaRead2IcebergTables {
+    public static String CONFLUENT_SCHEMA_REGISTRY_URL = "http://localhost:18081";
 
     public void setCheckpoint(StreamExecutionEnvironment env) {
         env.enableCheckpointing(10000);
+        // set mode to exactly-once (this is the default)
         env.getCheckpointConfig().setCheckpointingConsistencyMode(CheckpointingMode.EXACTLY_ONCE);
+        // make sure 500 ms of progress happen between checkpoints
         env.getCheckpointConfig().setMinPauseBetweenCheckpoints(500);
+        // checkpoints have to complete within one minute, or are discarded
         env.getCheckpointConfig().setCheckpointTimeout(60000);
+        // only two consecutive checkpoint failures are tolerated
         env.getCheckpointConfig().setTolerableCheckpointFailureNumber(2);
+        // allow only one checkpoint to be in progress at the same time
         env.getCheckpointConfig().setMaxConcurrentCheckpoints(1);
+        // enable externalized checkpoints which are retained
+        // after job cancellation
         env.getCheckpointConfig().setExternalizedCheckpointRetention(
                 ExternalizedCheckpointRetention.RETAIN_ON_CANCELLATION);
+        // enables the unaligned checkpoints
         env.getCheckpointConfig().enableUnalignedCheckpoints();
+        // sets the checkpoint storage where checkpoint snapshots will be written
         Configuration config = new Configuration();
         config.set(CheckpointingOptions.CHECKPOINT_STORAGE, "filesystem");
         config.set(CheckpointingOptions.CHECKPOINTS_DIRECTORY, "file:///c://flink/checkpoint");
         env.configure(config);
     }
 
-    public KafkaSource<StockTicks> buildKafkaSource(String kafkaBootStrapServers, String[] topics, String groupId) {
-        JsonDeserializationSchema<StockTicks> jsonDeserializationSchema =new JsonDeserializationSchema<>(StockTicks.class);
-        KafkaSource<StockTicks> kafkaSource = KafkaSource.<StockTicks>builder()
+    public KafkaSource<StockTicksWithSchema> buildKafkaSource(String kafkaBootStrapServers, String[] topics, String groupId) {
+        Map<String, String> kafkaProps = new HashMap<>();
+        kafkaProps.put(KafkaJsonSchemaDeserializerConfig.JSON_VALUE_TYPE, StockTicksWithSchema.class.getName());
+        kafkaProps.put("schema.registry.url", CONFLUENT_SCHEMA_REGISTRY_URL);
+        kafkaProps.put("json.fail.invalid.schema", String.valueOf(true));
+
+        KafkaSource<StockTicksWithSchema> kafkaSource = KafkaSource.<StockTicksWithSchema>builder()
                 .setBootstrapServers(kafkaBootStrapServers)
                 .setTopics(topics)
                 .setGroupId(groupId)
                 .setStartingOffsets(OffsetsInitializer.latest())
-                .setValueOnlyDeserializer(jsonDeserializationSchema)
+                .setDeserializer(KafkaRecordDeserializationSchema.valueOnly(KafkaStockticksJsonSchemaDeserializer.class, kafkaProps))
                 .build();
         return kafkaSource;
     }
 
     public SingleOutputStreamOperator<RowData> createDataStreamSource(StreamExecutionEnvironment env, String kafkaBootStrapServers, String[] topics, String groupId) {
         setCheckpoint(env);
-        KafkaSource<StockTicks> source = this.buildKafkaSource(kafkaBootStrapServers, topics, groupId);
-        return env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source").map((MapFunction<StockTicks, RowData>) value -> {
+        KafkaSource<StockTicksWithSchema> source = this.buildKafkaSource(kafkaBootStrapServers, topics, groupId);
+        return env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source").map((MapFunction<StockTicksWithSchema, RowData>) value -> {
             GenericRowData rowData = new GenericRowData(12);
             rowData.setField(0, value.getVolume());
             rowData.setField(1, StringData.fromString(value.getSymbol()));
@@ -121,8 +140,8 @@ public class KafkaDataStreamSpecificJsonRead2IcebergTables_FlinkJson {
     public static void main(String[] args) throws Exception {
         System.setProperty("HADOOP_USER_NAME", "bryan");
         StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
-        KafkaDataStreamSpecificJsonRead2IcebergTables_FlinkJson write2Tables = new KafkaDataStreamSpecificJsonRead2IcebergTables_FlinkJson();
-        DataStream<RowData> kafkaSource = write2Tables.createDataStreamSource(env, "localhost:19092", new String[]{"stock_ticks"}, "stock_sticks_client");
+        KafkaDataStreamJsonSchemaRead2IcebergTables write2Tables = new KafkaDataStreamJsonSchemaRead2IcebergTables();
+        DataStream<RowData> kafkaSource = write2Tables.createDataStreamSource(env, "localhost:19092", new String[]{"stock_ticks_jsonschema"}, "stock_sticks_client");
         write2Tables.writeToIcebergHadoopCatalogTables(kafkaSource, "hadoop_catalog", "default", "stock_ticks");
         write2Tables.writeToIcebergHiveCatalogTables(kafkaSource, "hive_catalog", "hive_db", "stock_ticks");
         env.execute("Writes Json data with schema in schema registry into iceberg tables");

@@ -1,4 +1,4 @@
-package org.example;
+package org.example.kafka.confluent.serde;
 
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
@@ -18,6 +18,8 @@ import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDe
 import org.apache.flink.core.execution.CheckpointingMode;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.example.FlinkDataStreamAvroWritesWithSchema;
+import org.example.Utils;
 
 import java.util.HashMap;
 import java.util.List;

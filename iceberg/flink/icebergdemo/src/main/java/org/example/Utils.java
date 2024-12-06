@@ -20,7 +20,7 @@ import java.util.Map;
 public class Utils {
     public static  final String WAREHOUSE_PATH = "hdfs://172.30.69.222:9000/user/hdfs/warehouse";
 
-    enum CatalogType{
+    public enum CatalogType{
         HIVE,
         HADOOP,
         JDBC
@@ -84,7 +84,7 @@ public class Utils {
      * @throws IOException
      */
     public static org.apache.avro.Schema getAvroSchema(String name) throws URISyntaxException, IOException {
-        URL resource = KafkaGenericAvroProducer.class.getClassLoader().getResource("avro/"+ name);
+        URL resource = Utils.class.getClassLoader().getResource("avro/"+ name);
         List<String> lines = Files.readAllLines(Paths.get(resource.toURI()));
         StringBuilder schemaStr = new StringBuilder();
         for(String line : lines){
@@ -102,7 +102,7 @@ public class Utils {
      * @throws URISyntaxException
      */
     public static List<String> readJsonLines(String fileName) throws IOException, URISyntaxException {
-        URL resource = KafkaGenericAvroProducer.class.getClassLoader().getResource("data/" + fileName);
+        URL resource = Utils.class.getClassLoader().getResource("data/" + fileName);
         return Files.readAllLines(Paths.get(resource.toURI()));
     }
 }

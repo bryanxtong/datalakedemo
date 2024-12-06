@@ -1,6 +1,7 @@
-package org.example;
+package org.example.kafka.confluent.serde;
 
-import io.confluent.kafka.serializers.KafkaJsonDeserializerConfig;
+import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
+import io.confluent.kafka.serializers.protobuf.KafkaProtobufDeserializerConfig;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.configuration.CheckpointingOptions;
@@ -20,17 +21,23 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.flink.CatalogLoader;
 import org.apache.iceberg.flink.TableLoader;
 import org.apache.iceberg.flink.sink.FlinkSink;
-import org.example.model.json.StockTicks;
+import org.example.KafkaStockTicksProtobufDeserializer;
+import org.example.Utils;
+import org.example.model.protobuf.StockTicksProto;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Read Json byte as java Object using confluent KafkaJsonDeserializer(No schema registry) and write to iceberg tables of hive/hadoop catalog
+ * Deserialize protobuf specific records as java Object using confluent KafkaProtobufDeserializer and write to iceberg tables of hadoop/hive catalog
+ * and use the KafkaSpecificProtoProducer to send records into kafka for testing and then run the class below(Schema registry involved)
+ * <p>
+ * <p>
  */
-public class KafkaDataStreamJsonRead2IcebergTables {
+public class KafkaDataStreamSpecificProtoRecordRead2IcebergTables {
+    public static String CONFLUENT_SCHEMA_REGISTRY_URL = "http://localhost:18081";
 
-    public static void setCheckpoint(StreamExecutionEnvironment env) {
+    public void setCheckpoint(StreamExecutionEnvironment env) throws ClassNotFoundException {
         env.enableCheckpointing(10000);
         env.getCheckpointConfig().setCheckpointingConsistencyMode(CheckpointingMode.EXACTLY_ONCE);
         env.getCheckpointConfig().setMinPauseBetweenCheckpoints(500);
@@ -43,41 +50,67 @@ public class KafkaDataStreamJsonRead2IcebergTables {
         Configuration config = new Configuration();
         config.set(CheckpointingOptions.CHECKPOINT_STORAGE, "filesystem");
         config.set(CheckpointingOptions.CHECKPOINTS_DIRECTORY, "file:///c://flink/checkpoint");
+        //TODO
+        Class<?> unmodColl = Class.forName("java.util.Collections$UnmodifiableCollection");
+        env.getConfig().addDefaultKryoSerializer(unmodColl, UnmodifiableCollectionsSerializer.class);
+
         env.configure(config);
     }
 
-    public KafkaSource<StockTicks> buildKafkaSource(String kafkaBootStrapServers, String[] topics, String groupId) {
+    /**
+     * Specfic avro records(Stockticks)
+     *
+     * @param kafkaBootStrapServers
+     * @param topics
+     * @param groupId
+     * @return
+     */
+    public KafkaSource<StockTicksProto.StockTicks> buildKafkaSource(String kafkaBootStrapServers, String[] topics, String groupId) {
         Map<String, String> kafkaProps = new HashMap<>();
-        kafkaProps.put(KafkaJsonDeserializerConfig.JSON_VALUE_TYPE, StockTicks.class.getName());
-        KafkaSource<StockTicks> kafkaSource = KafkaSource.<StockTicks>builder()
+        kafkaProps.put(KafkaProtobufDeserializerConfig.SCHEMA_REGISTRY_URL_CONFIG, "http://localhost:18081");
+        kafkaProps.put(KafkaProtobufDeserializerConfig.SPECIFIC_PROTOBUF_VALUE_TYPE, StockTicksProto.StockTicks.class.getName());
+
+        KafkaSource<StockTicksProto.StockTicks> kafkaSource = KafkaSource.<StockTicksProto.StockTicks>builder()
                 .setBootstrapServers(kafkaBootStrapServers)
                 .setTopics(topics)
                 .setGroupId(groupId)
                 .setStartingOffsets(OffsetsInitializer.latest())
-                .setDeserializer(KafkaRecordDeserializationSchema.valueOnly(KafkaStockticksJsonDeserializer.class, kafkaProps))
+                .setDeserializer(KafkaRecordDeserializationSchema.valueOnly(KafkaStockTicksProtobufDeserializer.class, kafkaProps))
                 .build();
         return kafkaSource;
     }
 
-    public SingleOutputStreamOperator<RowData> createDataStreamSource(StreamExecutionEnvironment env, String kafkaBootStrapServers, String[] topics, String groupId) {
+    /**
+     * transform to specific avro record StockTicks
+     *
+     * @param env
+     * @param kafkaBootStrapServers
+     * @param topics
+     * @param groupId
+     * @return
+     * @throws ClassNotFoundException
+     */
+    public SingleOutputStreamOperator<RowData> createDataStreamSource(StreamExecutionEnvironment env, String kafkaBootStrapServers, String[] topics, String groupId) throws ClassNotFoundException {
         setCheckpoint(env);
-        KafkaSource<StockTicks> source = this.buildKafkaSource(kafkaBootStrapServers, topics, groupId);
-        return env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source").map((MapFunction<StockTicks, RowData>) value -> {
-            GenericRowData of = GenericRowData.of(value.getVolume(),
-                    StringData.fromString(value.getSymbol()),
-                    StringData.fromString(value.getTs()),
-                    StringData.fromString(value.getMonth()),
-                    value.getHigh(),
-                    value.getLow(),
-                    StringData.fromString(value.getKey()),
-                    value.getYear(),
-                    StringData.fromString(value.getDate()),
-                    value.getClose(),
-                    value.getOpen(),
-                    StringData.fromString(value.getDay())
-            );
-            return of;
-        });
+        KafkaSource<StockTicksProto.StockTicks> source = this.buildKafkaSource(kafkaBootStrapServers, topics, groupId);
+        return env
+                .fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source")
+                .map((MapFunction<StockTicksProto.StockTicks, RowData>) value -> {
+                    GenericRowData of = GenericRowData.of(value.getVolume(),
+                            StringData.fromString(value.getSymbol()),
+                            StringData.fromString(value.getTs()),
+                            StringData.fromString(value.getMonth()),
+                            value.getHigh(),
+                            value.getLow(),
+                            StringData.fromString(value.getKey()),
+                            value.getYear(),
+                            StringData.fromString(value.getDate()),
+                            value.getClose(),
+                            value.getOpen(),
+                            StringData.fromString(value.getDay())
+                    );
+                    return of;
+                });
     }
 
     public void writeToIcebergHadoopCatalogTables(DataStream<RowData> source, String catalogName, String databaseName, String tableName) {
@@ -112,10 +145,10 @@ public class KafkaDataStreamJsonRead2IcebergTables {
     public static void main(String[] args) throws Exception {
         System.setProperty("HADOOP_USER_NAME", "bryan");
         StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
-        KafkaDataStreamJsonRead2IcebergTables write2Tables = new KafkaDataStreamJsonRead2IcebergTables();
-        DataStream<RowData> kafkaSource = write2Tables.createDataStreamSource(env, "localhost:19092", new String[]{"stock_ticks"}, "stock_sticks_client");
+        KafkaDataStreamSpecificProtoRecordRead2IcebergTables write2Tables = new KafkaDataStreamSpecificProtoRecordRead2IcebergTables();
+        DataStream<RowData> kafkaSource = write2Tables.createDataStreamSource(env, "localhost:19092", new String[]{"StockTicksSpecificProtoBuf"}, "stock_sticks_client");
         write2Tables.writeToIcebergHadoopCatalogTables(kafkaSource, "hadoop_catalog", "default", "stock_ticks");
         write2Tables.writeToIcebergHiveCatalogTables(kafkaSource, "hive_catalog", "hive_db", "stock_ticks");
-        env.execute("Writes Json data into iceberg tables");
+        env.execute("Writes Json data with schema in schema registry into iceberg tables");
     }
 }

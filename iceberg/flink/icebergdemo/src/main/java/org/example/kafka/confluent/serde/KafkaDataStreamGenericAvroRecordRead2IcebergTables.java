@@ -1,4 +1,4 @@
-package org.example;
+package org.example.kafka.confluent.serde;
 
 import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
@@ -24,6 +24,8 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.flink.CatalogLoader;
 import org.apache.iceberg.flink.TableLoader;
 import org.apache.iceberg.flink.sink.FlinkSink;
+import org.example.Utils;
+
 import java.util.HashMap;
 import java.util.Map;
 

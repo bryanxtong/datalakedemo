@@ -1,4 +1,4 @@
-package org.example;
+package org.example.kafka.flink.serde;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.flink.connector.base.DeliveryGuarantee;
@@ -7,12 +7,13 @@ import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.formats.avro.AvroSerializationSchema;
 import org.apache.flink.streaming.api.datastream.DataStreamSource;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.example.Utils;
 import org.example.model.avro.StockTicks;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Write Avro records into kafka with Flink-Avro library
+ * Write Avro Specific records(eg StockTicks) into kafka with Flink-Avro library
  */
 public class KafkaSpecificAvroProducerWithFlinkAvro {
 
@@ -49,6 +50,7 @@ public class KafkaSpecificAvroProducerWithFlinkAvro {
             stockTicksList.add(stockTicksAvro);
         }
         DataStreamSource<StockTicks> dataStreamSource = env.fromData(stockTicksList);
+        dataStreamSource.print("---");
         dataStreamSource.sinkTo(sink);
         env.execute();
     }
