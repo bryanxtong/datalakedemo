@@ -1,4 +1,4 @@
-package org.example;
+package org.example.kafka.confluent.serde;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.confluent.kafka.serializers.KafkaAvroSerializer;
@@ -8,6 +8,7 @@ import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.example.Utils;
 import org.example.model.json.StockTicks;
 
 import java.io.IOException;

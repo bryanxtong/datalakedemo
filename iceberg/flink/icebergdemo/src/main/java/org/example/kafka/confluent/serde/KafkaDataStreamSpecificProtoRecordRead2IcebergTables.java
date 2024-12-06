@@ -21,7 +21,6 @@ import org.apache.iceberg.catalog.TableIdentifier;
 import org.apache.iceberg.flink.CatalogLoader;
 import org.apache.iceberg.flink.TableLoader;
 import org.apache.iceberg.flink.sink.FlinkSink;
-import org.example.KafkaStockTicksProtobufDeserializer;
 import org.example.Utils;
 import org.example.model.protobuf.StockTicksProto;
 
