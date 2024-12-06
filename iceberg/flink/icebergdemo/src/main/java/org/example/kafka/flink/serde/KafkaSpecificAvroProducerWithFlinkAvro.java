@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Write Avro Specific records(eg StockTicks) into kafka with Flink-Avro library
+ * Use Flink-Avro to write Avro Specific records(eg StockTicks) into kafka
  */
 public class KafkaSpecificAvroProducerWithFlinkAvro {
 
@@ -34,7 +34,7 @@ public class KafkaSpecificAvroProducerWithFlinkAvro {
         List<StockTicks> stockTicksList = new ArrayList<>();
         for (String line : lines) {
             org.example.model.json.StockTicks stockTicksJson = objectMapper.readValue(line, org.example.model.json.StockTicks.class);
-            StockTicks stockTicksAvro = new StockTicks();
+            org.example.model.avro.StockTicks stockTicksAvro = new org.example.model.avro.StockTicks();
             stockTicksAvro.put("volume", stockTicksJson.getVolume());
             stockTicksAvro.put("symbol", stockTicksJson.getSymbol());
             stockTicksAvro.put("ts", stockTicksJson.getTs());

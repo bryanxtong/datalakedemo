@@ -18,8 +18,9 @@ import org.example.Utils;
 import org.example.model.avro.StockTicks;
 
 /**
- * using Flink Avro to deserialize Avro specific records and write to iceberg tables of hadoop/hive catalog
- * and use the KafkaSpecificAvroProducerWithFlinkAvro.java to send records into kafka for testing and then run the class below
+ * using Flink Avro to deserialize avro specific records and write to iceberg tables
+ * of hadoop/hive catalog and use the KafkaSpecificAvroProducerWithFlinkAvro.java to
+ * send records into kafka for testing and then run the class below
  * <p>
  * <p>
  */
@@ -74,7 +75,7 @@ public class KafkaDataStreamSpecificAvroRecordRead2IcebergTablesWithFlinkAvro {
         setCheckpoint(env);
         KafkaSource<StockTicks> source = this.buildKafkaSource(kafkaBootStrapServers, topics, groupId);
         return env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source")
-                .map((MapFunction<StockTicks, GenericRecord>) value-> value);
+                .map((MapFunction<StockTicks, GenericRecord>) value -> value);
     }
 
     public static void main(String[] args) throws Exception {
