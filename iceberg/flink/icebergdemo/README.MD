@@ -69,5 +69,7 @@ create table `stock_ticks`(
 );
 
 ```
+Kafka docker compose
 
+You need to update the docker host ip before using it.
 
