@@ -34,7 +34,7 @@ import java.util.Map;
  * <p>
  * <p>
  */
-public class KafkaDataStreamJsonSchemaRead2IcebergTables {
+public class KafkaDataStreamSpecificJsonSchemaRead2IcebergTables {
     public static String CONFLUENT_SCHEMA_REGISTRY_URL = "http://localhost:18081";
 
     public void setCheckpoint(StreamExecutionEnvironment env) {
@@ -140,7 +140,7 @@ public class KafkaDataStreamJsonSchemaRead2IcebergTables {
     public static void main(String[] args) throws Exception {
         System.setProperty("HADOOP_USER_NAME", "bryan");
         StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
-        KafkaDataStreamJsonSchemaRead2IcebergTables write2Tables = new KafkaDataStreamJsonSchemaRead2IcebergTables();
+        KafkaDataStreamSpecificJsonSchemaRead2IcebergTables write2Tables = new KafkaDataStreamSpecificJsonSchemaRead2IcebergTables();
         DataStream<RowData> kafkaSource = write2Tables.createDataStreamSource(env, "localhost:19092", new String[]{"stock_ticks_jsonschema"}, "stock_sticks_client");
         write2Tables.writeToIcebergHadoopCatalogTables(kafkaSource, "hadoop_catalog", "default", "stock_ticks");
         write2Tables.writeToIcebergHiveCatalogTables(kafkaSource, "hive_catalog", "hive_db", "stock_ticks");

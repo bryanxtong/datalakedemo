@@ -29,7 +29,7 @@ import java.util.Map;
 /**
  * Read Json byte as java Object using confluent KafkaJsonDeserializer(No schema registry) and write to iceberg tables of hive/hadoop catalog
  */
-public class KafkaDataStreamJsonRead2IcebergTables {
+public class KafkaDataStreamSpecificJsonRead2IcebergTables {
 
     public static void setCheckpoint(StreamExecutionEnvironment env) {
         env.enableCheckpointing(10000);
@@ -113,7 +113,7 @@ public class KafkaDataStreamJsonRead2IcebergTables {
     public static void main(String[] args) throws Exception {
         System.setProperty("HADOOP_USER_NAME", "bryan");
         StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
-        KafkaDataStreamJsonRead2IcebergTables write2Tables = new KafkaDataStreamJsonRead2IcebergTables();
+        KafkaDataStreamSpecificJsonRead2IcebergTables write2Tables = new KafkaDataStreamSpecificJsonRead2IcebergTables();
         DataStream<RowData> kafkaSource = write2Tables.createDataStreamSource(env, "localhost:19092", new String[]{"stock_ticks"}, "stock_sticks_client");
         write2Tables.writeToIcebergHadoopCatalogTables(kafkaSource, "hadoop_catalog", "default", "stock_ticks");
         write2Tables.writeToIcebergHiveCatalogTables(kafkaSource, "hive_catalog", "hive_db", "stock_ticks");
