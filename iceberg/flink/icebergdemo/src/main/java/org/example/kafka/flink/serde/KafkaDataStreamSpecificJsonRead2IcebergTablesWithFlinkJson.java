@@ -24,10 +24,7 @@ import org.example.model.json.StockTicks;
 
 /**
  * using Flink Json to deserialize Json as java Object and write to iceberg tables of hadoop/hive catalog
- * and use the KafkaStockTicksWithJsonProducer to send records into kafka for testing and then run the class below
- *
- * It's implementation is the same as KafkaDataStreamJsonRead2IcebergTables.java except It is using flink-json library
- * <p>* <p>
+ * and use the KafkaSpecificJsonProducerWithFlinkJson to send records into kafka for testing
  * <p>
  */
 public class KafkaDataStreamSpecificJsonRead2IcebergTablesWithFlinkJson {
@@ -77,7 +74,6 @@ public class KafkaDataStreamSpecificJsonRead2IcebergTablesWithFlinkJson {
             rowData.setField(9, value.getClose());
             rowData.setField(10, value.getOpen());
             rowData.setField(11, StringData.fromString(value.getDay()));
-            System.out.println(rowData);
             return rowData;
         });
     }
@@ -123,7 +119,7 @@ public class KafkaDataStreamSpecificJsonRead2IcebergTablesWithFlinkJson {
         System.setProperty("HADOOP_USER_NAME", "bryan");
         StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
         KafkaDataStreamSpecificJsonRead2IcebergTablesWithFlinkJson write2Tables = new KafkaDataStreamSpecificJsonRead2IcebergTablesWithFlinkJson();
-        DataStream<RowData> kafkaSource = write2Tables.createDataStreamSource(env, "localhost:19092", new String[]{"stock_ticks"}, "stock_sticks_client");
+        DataStream<RowData> kafkaSource = write2Tables.createDataStreamSource(env, "localhost:19092", new String[]{"StockTicksJsonSpecific"}, "stock_sticks_client");
         write2Tables.writeToIcebergHadoopCatalogTables(kafkaSource, "hadoop_catalog", "default", "stock_ticks");
         write2Tables.writeToIcebergHiveCatalogTables(kafkaSource, "hive_catalog", "hive_db", "stock_ticks");
         env.execute("Writes Json data with schema in schema registry into iceberg tables");

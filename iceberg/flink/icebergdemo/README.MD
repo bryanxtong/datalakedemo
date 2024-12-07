@@ -23,7 +23,7 @@ create table `hadoop_catalog`.`default`.`stock_ticks`(
   `symbol` string,
   `ts` string,
   `month` string,
-  ` high` double,
+  `high` double,
   `low` double,
   `key` string,
   `year` int,
@@ -35,6 +35,7 @@ create table `hadoop_catalog`.`default`.`stock_ticks`(
 ```
 create a hive catalog and tables
 ```
+
 CREATE CATALOG hive_catalog WITH (
   'type'='iceberg',
   'catalog-type'='hive',
@@ -44,12 +45,15 @@ CREATE CATALOG hive_catalog WITH (
   'warehouse'='hdfs://localhost:9000/user/hive/warehouse'
 );
 
+use catalog hive_catalog;
+create database hive_db;
+use hive_db;
 create table `stock_ticks`(
   `volume`  bigint,
   `symbol` string,
   `ts` string,
   `month` string,
-  ` high` double,
+  `high` double,
   `low` double,
   `key` string,
   `year` int,
