@@ -1,10 +1,11 @@
-package org.example;
+package org.example.kafka.confluent.serde;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializer;
 import io.confluent.kafka.serializers.protobuf.KafkaProtobufSerializerConfig;
 import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.example.Utils;
 import org.example.model.protobuf.StockTicksProto;
 
 import java.io.IOException;
@@ -15,7 +16,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 
-@Deprecated
 public class KafkaSpecificProtoProducer {
 
     public static void main(String[] args) throws ExecutionException, InterruptedException, TimeoutException, IOException, URISyntaxException {

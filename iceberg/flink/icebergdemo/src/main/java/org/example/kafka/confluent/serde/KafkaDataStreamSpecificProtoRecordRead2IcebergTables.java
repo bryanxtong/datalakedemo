@@ -49,10 +49,6 @@ public class KafkaDataStreamSpecificProtoRecordRead2IcebergTables {
         Configuration config = new Configuration();
         config.set(CheckpointingOptions.CHECKPOINT_STORAGE, "filesystem");
         config.set(CheckpointingOptions.CHECKPOINTS_DIRECTORY, "file:///c://flink/checkpoint");
-        //TODO
-        Class<?> unmodColl = Class.forName("java.util.Collections$UnmodifiableCollection");
-        env.getConfig().addDefaultKryoSerializer(unmodColl, UnmodifiableCollectionsSerializer.class);
-
         env.configure(config);
     }
 
@@ -146,6 +142,7 @@ public class KafkaDataStreamSpecificProtoRecordRead2IcebergTables {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.createLocalEnvironment();
         KafkaDataStreamSpecificProtoRecordRead2IcebergTables write2Tables = new KafkaDataStreamSpecificProtoRecordRead2IcebergTables();
         DataStream<RowData> kafkaSource = write2Tables.createDataStreamSource(env, "localhost:19092", new String[]{"StockTicksSpecificProtoBuf"}, "stock_sticks_client");
+        kafkaSource.print();
         write2Tables.writeToIcebergHadoopCatalogTables(kafkaSource, "hadoop_catalog", "default", "stock_ticks");
         write2Tables.writeToIcebergHiveCatalogTables(kafkaSource, "hive_catalog", "hive_db", "stock_ticks");
         env.execute("Writes Json data with schema in schema registry into iceberg tables");
