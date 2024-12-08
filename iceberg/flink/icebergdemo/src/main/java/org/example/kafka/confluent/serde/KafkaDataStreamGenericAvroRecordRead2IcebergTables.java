@@ -28,6 +28,7 @@ import org.apache.iceberg.flink.sink.FlinkSink;
 import org.example.Utils;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -91,9 +92,10 @@ public class KafkaDataStreamGenericAvroRecordRead2IcebergTables {
                 .map((MapFunction<Object, RowData>) value -> {
                     GenericRowData rowData = new GenericRowData(12);
                     GenericRecord rc = (GenericRecord) value;
-                    String[] fieldNames = new String[]{"volume", "symbol", "ts", "month", "high", "low", "key", "year", "date", "close", "open", "day"};
-                    for (int i = 0; i < fieldNames.length; i++) {
-                        Object o = rc.get(fieldNames[i]);
+                    Schema schema = rc.getSchema();
+                    List<Schema.Field> fields = schema.getFields();
+                    for (int i = 0; i < fields.size(); i++) {
+                        Object o = rc.get(fields.get(i).name());
                         if (o instanceof Long l) {
                             rowData.setField(i, l);
                         } else if (o instanceof Utf8 str) {
