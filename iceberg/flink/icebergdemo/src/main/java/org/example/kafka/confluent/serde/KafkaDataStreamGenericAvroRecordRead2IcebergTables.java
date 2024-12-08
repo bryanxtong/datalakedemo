@@ -1,8 +1,8 @@
 package org.example.kafka.confluent.serde;
 
-import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
+import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.util.Utf8;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
@@ -14,6 +14,7 @@ import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
 import org.apache.flink.core.execution.CheckpointingMode;
+import org.apache.flink.formats.avro.utils.AvroKryoSerializerUtils;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -50,11 +51,7 @@ public class KafkaDataStreamGenericAvroRecordRead2IcebergTables {
         env.getCheckpointConfig().enableUnalignedCheckpoints();
         Configuration config = new Configuration();
         config.set(CheckpointingOptions.CHECKPOINT_STORAGE, "filesystem");
-        config.set(CheckpointingOptions.CHECKPOINTS_DIRECTORY, "file:///c://flink/checkpoint_genericavro");
-        //TODO
-        Class<?> unmodColl = Class.forName("java.util.Collections$UnmodifiableCollection");
-        env.getConfig().addDefaultKryoSerializer(unmodColl, UnmodifiableCollectionsSerializer.class);
-
+        config.set(CheckpointingOptions.CHECKPOINTS_DIRECTORY, "file:///c://flink/checkpoint");
         env.configure(config);
     }
 
@@ -84,6 +81,9 @@ public class KafkaDataStreamGenericAvroRecordRead2IcebergTables {
      */
     public SingleOutputStreamOperator<RowData> createDataStreamSource(StreamExecutionEnvironment env, String kafkaBootStrapServers, String[] topics, String groupId) throws ClassNotFoundException {
         setCheckpoint(env);
+        //copy from flink-avro AvroKryoSerializerUtils.java to eliminate com.esotericsoftware.kryo.KryoException: java.lang.UnsupportedOperationException
+        env.getConfig().getSerializerConfig().addDefaultKryoSerializer(Schema.class, AvroKryoSerializerUtils.AvroSchemaSerializer.class);
+
         KafkaSource<Object> source = this.buildKafkaSource(kafkaBootStrapServers, topics, groupId);
         return env
                 .fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source")
