@@ -1,6 +1,5 @@
 package org.example.kafka.confluent.serde;
 
-import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
 import org.apache.avro.Schema;
@@ -16,6 +15,7 @@ import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
 import org.apache.flink.core.execution.CheckpointingMode;
+import org.apache.flink.formats.avro.utils.AvroKryoSerializerUtils;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.example.FlinkDataStreamAvroWritesWithSchema;
@@ -46,11 +46,7 @@ public class KafkaDataStreamGenericAvroRecordRead2IcebergTables2 {
         env.getCheckpointConfig().enableUnalignedCheckpoints();
         Configuration config = new Configuration();
         config.set(CheckpointingOptions.CHECKPOINT_STORAGE, "filesystem");
-        config.set(CheckpointingOptions.CHECKPOINTS_DIRECTORY, "file:///c://flink/checkpoint_genericavro2");
-        //TODO
-        Class<?> unmodColl = Class.forName("java.util.Collections$UnmodifiableCollection");
-        env.getConfig().addDefaultKryoSerializer(unmodColl, UnmodifiableCollectionsSerializer.class);
-
+        config.set(CheckpointingOptions.CHECKPOINTS_DIRECTORY, "file:///c://flink/checkpoint");
         env.configure(config);
     }
 
@@ -71,19 +67,12 @@ public class KafkaDataStreamGenericAvroRecordRead2IcebergTables2 {
 
     public DataStream<GenericRecord> createDataStreamSource(StreamExecutionEnvironment env, String kafkaBootStrapServers, String[] topics, String groupId) throws ClassNotFoundException {
         setCheckpoint(env);
+        env.getConfig().getSerializerConfig().addDefaultKryoSerializer(Schema.class, AvroKryoSerializerUtils.AvroSchemaSerializer.class);
         KafkaSource<Object> source = this.buildKafkaSource(kafkaBootStrapServers, topics, groupId);
         return env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source")
                 .map((MapFunction<Object, GenericRecord>) value -> {
-                    //Method threw 'java.lang.NullPointerException' exception. Cannot evaluate org.apache.avro.Schema$RecordSchema.toString()
                     GenericData.Record rc = (GenericData.Record) value;
-                    //use cannot use value directly, as schema evaluated as NullPointerException, so copy to another generic record
-                    Schema avroSchema = Utils.getAvroSchema("StockTicks.avsc");
-                    List<Schema.Field> fields = avroSchema.getFields();
-                    GenericRecord genericRecord = new GenericData.Record(avroSchema);
-                    for (int i = 0; i < fields.size(); i++) {
-                        genericRecord.put(i, rc.get(fields.get(i).name()));
-                    }
-                    return genericRecord;
+                    return rc;
                 });
     }
 

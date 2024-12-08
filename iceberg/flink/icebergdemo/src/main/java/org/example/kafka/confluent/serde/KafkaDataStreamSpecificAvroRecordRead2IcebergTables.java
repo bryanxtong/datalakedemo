@@ -1,11 +1,12 @@
 package org.example.kafka.confluent.serde;
 
-import de.javakaffee.kryoserializers.UnmodifiableCollectionsSerializer;
 import io.confluent.kafka.serializers.KafkaAvroDeserializer;
 import io.confluent.kafka.serializers.KafkaAvroDeserializerConfig;
+import org.apache.avro.generic.GenericData;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.java.typeutils.runtime.kryo.Serializers;
 import org.apache.flink.configuration.CheckpointingOptions;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.ExternalizedCheckpointRetention;
@@ -45,10 +46,6 @@ public class KafkaDataStreamSpecificAvroRecordRead2IcebergTables {
         Configuration config = new Configuration();
         config.set(CheckpointingOptions.CHECKPOINT_STORAGE, "filesystem");
         config.set(CheckpointingOptions.CHECKPOINTS_DIRECTORY, "file:///c://flink/checkpoint");
-        //TODO
-        Class<?> unmodColl = Class.forName("java.util.Collections$UnmodifiableCollection");
-        env.getConfig().addDefaultKryoSerializer(unmodColl, UnmodifiableCollectionsSerializer.class);
-
         env.configure(config);
     }
 
@@ -88,6 +85,9 @@ public class KafkaDataStreamSpecificAvroRecordRead2IcebergTables {
      */
     public SingleOutputStreamOperator<GenericRecord> createDataStreamSource(StreamExecutionEnvironment env, String kafkaBootStrapServers, String[] topics, String groupId) throws ClassNotFoundException {
         setCheckpoint(env);
+        env.getConfig().getSerializerConfig().registerTypeWithKryoSerializer(
+                GenericData.Array.class,
+                Serializers.SpecificInstanceCollectionSerializerForArrayList.class);
         KafkaSource<Object> source = this.buildKafkaSource(kafkaBootStrapServers, topics, groupId);
         return env
                 .fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source")
