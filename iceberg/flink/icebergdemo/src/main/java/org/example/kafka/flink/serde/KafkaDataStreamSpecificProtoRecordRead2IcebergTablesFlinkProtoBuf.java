@@ -112,6 +112,6 @@ public class KafkaDataStreamSpecificProtoRecordRead2IcebergTablesFlinkProtoBuf {
         kafkaSource.print("---------------");
         write2Tables.writeToIcebergHadoopCatalogTables(kafkaSource, "hadoop_catalog", "default", "stock_ticks");
         write2Tables.writeToIcebergHiveCatalogTables(kafkaSource, "hive_catalog", "hive_db", "stock_ticks");
-        env.execute("Writes Json data with schema in schema registry into iceberg tables");
+        env.execute("Writes protobuf data into iceberg tables");
     }
 }

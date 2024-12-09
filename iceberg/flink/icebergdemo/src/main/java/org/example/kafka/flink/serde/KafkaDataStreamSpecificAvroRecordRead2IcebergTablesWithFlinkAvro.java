@@ -87,6 +87,6 @@ public class KafkaDataStreamSpecificAvroRecordRead2IcebergTablesWithFlinkAvro {
         flinkWritesJob.writeAvroRecords(kafkaSource, FlinkDataStreamAvroWritesWithSchema.getAvroSchema("StockTicks.avsc"));
         FlinkDataStreamAvroWritesWithSchema flinkWritesJob2 = new FlinkDataStreamAvroWritesWithSchema(Utils.CatalogType.HIVE, "hive_catalog", "hive_db", "stock_ticks");
         flinkWritesJob2.writeAvroRecords(kafkaSource, FlinkDataStreamAvroWritesWithSchema.getAvroSchema("StockTicks.avsc"));
-        env.execute("Writes Json data with schema in schema registry into iceberg tables");
+        env.execute("Writes avro data into iceberg tables");
     }
 }

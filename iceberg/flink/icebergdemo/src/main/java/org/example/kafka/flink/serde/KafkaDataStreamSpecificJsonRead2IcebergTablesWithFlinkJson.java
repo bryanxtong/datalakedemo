@@ -122,6 +122,6 @@ public class KafkaDataStreamSpecificJsonRead2IcebergTablesWithFlinkJson {
         DataStream<RowData> kafkaSource = write2Tables.createDataStreamSource(env, "localhost:19092", new String[]{"StockTicksJsonSpecific"}, "stock_sticks_client");
         write2Tables.writeToIcebergHadoopCatalogTables(kafkaSource, "hadoop_catalog", "default", "stock_ticks");
         write2Tables.writeToIcebergHiveCatalogTables(kafkaSource, "hive_catalog", "hive_db", "stock_ticks");
-        env.execute("Writes Json data with schema in schema registry into iceberg tables");
+        env.execute("Writes Json data into iceberg tables");
     }
 }

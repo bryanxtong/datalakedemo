@@ -1,8 +1,6 @@
 package org.example.kafka.confluent.serde;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.*;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.MapFunction;
@@ -164,6 +162,6 @@ public class KafkaDataStreamGenericJsonRead2IcebergTables {
         kafkaSource.print();
         write2Tables.writeToIcebergHadoopCatalogTables(kafkaSource, "hadoop_catalog", "default", "stock_ticks");
         write2Tables.writeToIcebergHiveCatalogTables(kafkaSource, "hive_catalog", "hive_db", "stock_ticks");
-        env.execute("Writes Json data with schema in schema registry into iceberg tables");
+        env.execute("Writes Json data into iceberg tables");
     }
 }
