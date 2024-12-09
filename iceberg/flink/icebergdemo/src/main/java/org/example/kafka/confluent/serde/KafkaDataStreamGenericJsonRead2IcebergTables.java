@@ -1,6 +1,9 @@
 package org.example.kafka.confluent.serde;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.*;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.configuration.CheckpointingOptions;
@@ -23,6 +26,7 @@ import org.apache.iceberg.flink.sink.FlinkSink;
 import org.example.Utils;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -48,6 +52,14 @@ public class KafkaDataStreamGenericJsonRead2IcebergTables {
         env.configure(config);
     }
 
+    /**
+     * Be caution with this way, as Long value which is less than Integer.MAX_VALUE will use integer type Instead.
+     * and It needs to process if iceberg type is Long
+     * @param kafkaBootStrapServers
+     * @param topics
+     * @param groupId
+     * @return
+     */
     public KafkaSource<JsonNode> buildKafkaSource(String kafkaBootStrapServers, String[] topics, String groupId) {
         Map<String, String> kafkaProps = new HashMap<>();
         KafkaSource<JsonNode> kafkaSource = KafkaSource.<JsonNode>builder()
@@ -64,9 +76,34 @@ public class KafkaDataStreamGenericJsonRead2IcebergTables {
         setCheckpoint(env);
         KafkaSource<JsonNode> source = this.buildKafkaSource(kafkaBootStrapServers, topics, groupId);
         return env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source").map((MapFunction<JsonNode, RowData>) value -> {
-            //TODO can change to generic type processing
-            GenericRowData rowData = new GenericRowData(12);
-            rowData.setField(0, value.get("volume").asLong());
+            Iterator<Map.Entry<String, JsonNode>> fields = value.fields();
+            GenericRowData rowData = new GenericRowData(value.size());
+            int i = 0;
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> next = fields.next();
+                String k = next.getKey();
+                JsonNode va = next.getValue();
+                ///////////////////////////////////////////////////////
+                //as iceberg use Long type for volume field, FIX IT
+                if (k.equals("volume")) {
+                    rowData.setField(i,  va.asLong());
+                }
+                //////////////////////////////////////////////////////
+
+                else if (va instanceof BigIntegerNode bn) {
+                    rowData.setField(i, bn.asLong());
+                } else if (va instanceof TextNode tn) {
+                    rowData.setField(i, StringData.fromString(tn.asText()));
+                } else if (va instanceof IntNode in) {
+                    rowData.setField(i, in.asInt());
+                } else if (va instanceof DoubleNode dn) {
+                    rowData.setField(i, dn.asDouble());
+                } else {
+                    System.out.println("Unprocessed Type " + va.getClass().getName());
+                }
+                i++;
+            }
+           /* rowData.setField(0, value.get("volume").asLong());
             rowData.setField(1, StringData.fromString(value.get("symbol").toString()));
             rowData.setField(2, StringData.fromString(value.get("ts").toString()));
             rowData.setField(3, StringData.fromString(value.get("month").toString()));
@@ -77,8 +114,7 @@ public class KafkaDataStreamGenericJsonRead2IcebergTables {
             rowData.setField(8, StringData.fromString(value.get("date").toString()));
             rowData.setField(9, value.get("close").asDouble());
             rowData.setField(10, value.get("open").asDouble());
-            rowData.setField(11, StringData.fromString(value.get("day").toString()));
-            System.out.println(rowData);
+            rowData.setField(11, StringData.fromString(value.get("day").toString()));*/
             return rowData;
         });
     }

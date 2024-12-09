@@ -45,7 +45,6 @@ public class KafkaGenericJsonProducer {
         }
         producer.flush();
         producer.close();
-        Thread.sleep(10000);
     }
     public static List<String> readJsonLines() throws IOException, URISyntaxException {
         URL resource = KafkaGenericJsonProducer.class.getClassLoader().getResource("data/batch_1.json");
