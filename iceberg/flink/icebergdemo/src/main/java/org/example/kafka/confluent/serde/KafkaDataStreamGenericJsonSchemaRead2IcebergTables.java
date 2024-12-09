@@ -68,6 +68,7 @@ public class KafkaDataStreamGenericJsonSchemaRead2IcebergTables {
         KafkaSource<JsonNode> source = this.buildKafkaSource(kafkaBootStrapServers, topics, groupId);
         return env.fromSource(source, WatermarkStrategy.noWatermarks(), "Kafka Source").map((MapFunction<JsonNode, RowData>) value -> {
             GenericRowData rowData = new GenericRowData(12);
+            //with JsonNode, Any Long type eg. value.get("volume") would change to Integer type if its value is less than Integer.MAX_VALUE
             rowData.setField(0, value.get("volume").asLong());
             rowData.setField(1, StringData.fromString(value.get("symbol").toString()));
             rowData.setField(2, StringData.fromString(value.get("ts").toString()));
